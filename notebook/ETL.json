@@ -1,0 +1,196 @@
+{
+	"name": "ETL",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "c0b0c53d-6104-482d-b8eb-c26fa1dedf33"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import pyspark\r\n",
+					"from pyspark.sql import SparkSession\r\n",
+					"from pyspark.sql import SQLContext\r\n",
+					"if __name__ == '__main__':\r\n",
+					"    scSpark = SparkSession \\\r\n",
+					"        .builder \\\r\n",
+					"        .appName(\"reading_csv\") \\\r\n",
+					"        .getOrCreate()\r\n",
+					"sc = scSpark.sparkContext\r\n",
+					"sc\r\n",
+					"\r\n",
+					""
+				],
+				"execution_count": 81
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"\r\n",
+					"if __name__ == '__main__':\r\n",
+					"    scSpark = SparkSession \\\r\n",
+					"        .builder \\\r\n",
+					"        .appName(\"reading csv\") \\\r\n",
+					"        .getOrCreate()\r\n",
+					"data_file = 'abfss://root@synapse11datalake.dfs.core.windows.net/Raw/ETLData/data*.csv'\r\n",
+					"sdfData = scSpark.read.csv(data_file, header=True).cache()\r\n",
+					"print('Total Records = {}'.format(sdfData.count()))\r\n",
+					"sdfData.show()"
+				],
+				"execution_count": 82
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"data_file = 'abfss://root@synapse11datalake.dfs.core.windows.net/Raw/supermarket_sales.csv'\r\n",
+					"sdfData = scSpark.read.csv(data_file, header=True, sep=\",\").cache()\r\n",
+					"gender = sdfData.groupBy('Gender').count()\r\n",
+					"print(gender.show())"
+				],
+				"execution_count": 83
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"sdfData.createOrReplaceTempView(\"sales\")\r\n",
+					"dfSales =  scSpark.sql('SELECT * from sales')\r\n",
+					"dfSales.show()\r\n",
+					""
+				],
+				"execution_count": 84
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dfqty = scSpark.sql('SELECT * from sales WHERE UnitPrice < 15 AND Quantity < 10')\r\n",
+					"dfqty.show()\r\n",
+					""
+				],
+				"execution_count": 85
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dfcity = scSpark.sql('SELECT COUNT(*) as total, City from sales GROUP BY City')\r\n",
+					"dfcity.show()"
+				],
+				"execution_count": 86
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dfqty.write.format('parquet').save('dfqty.parquet')"
+				],
+				"execution_count": 87
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"dfcity.coalesce(1).write.format('parquet').save('dfcity.parquet')"
+				],
+				"execution_count": 89
+			}
+		]
+	}
+}
